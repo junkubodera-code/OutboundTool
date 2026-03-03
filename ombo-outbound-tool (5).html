@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ombo アウトバウンドメールツール</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+:root {
+  --bg:#0d0f14;--surface:#161920;--surface2:#1e2230;--border:#2a2f40;
+  --accent:#4f8ef7;--accent2:#7c5cfc;--success:#2ecc71;--warning:#f39c12;
+  --danger:#e74c3c;--text:#e8eaf0;--text2:#8890a8;--text3:#4a5068;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;top:-50%;left:-20%;width:60%;height:80%;background:radial-gradient(ellipse,rgba(79,142,247,.06) 0%,transparent 70%);pointer-events:none;z-index:0;}
+.app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 24px 60px;}
+header{display:flex;align-items:center;justify-content:space-between;padding:28px 0 32px;border-bottom:1px solid var(--border);margin-bottom:36px;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.5px;}
+.logo span{color:var(--accent);}
+.stat-pill{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 16px;font-size:13px;color:var(--text2);}
+.stat-pill strong{color:var(--text);font-weight:600;}
+.status-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.steps{display:flex;align-items:center;margin-bottom:36px;flex-wrap:wrap;gap:4px;}
+.step{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text3);transition:all .3s;}
+.step.active{background:rgba(79,142,247,.1);color:var(--accent);border:1px solid rgba(79,142,247,.3);}
+.step.done{color:var(--success);}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'Syne',sans-serif;font-weight:700;flex-shrink:0;}
+.step.active .step-num{background:var(--accent);border-color:var(--accent);color:white;}
+.step.done .step-num{background:var(--success);border-color:var(--success);color:white;}
+.step-arrow{color:var(--text3);margin:0 2px;font-size:14px;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:24px;display:none;}
+.panel.visible{display:block;}
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.panel-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;letter-spacing:-.3px;}
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:48px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg);}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(79,142,247,.04);}
+.upload-icon{font-size:40px;margin-bottom:12px;}
+.upload-text{font-size:15px;color:var(--text2);margin-bottom:6px;}
+.upload-subtext{font-size:12px;color:var(--text3);}
+label{display:block;font-size:12px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
+input[type=text],input[type=email],input[type=number],textarea,select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:14px;outline:none;transition:border-color .2s;resize:vertical;}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);}
+textarea{min-height:120px;line-height:1.7;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.form-field{margin-bottom:20px;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:600;font-family:'Noto Sans JP',sans-serif;cursor:pointer;transition:all .2s;border:none;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:white;}
+.btn-primary:hover{background:#3a7be0;transform:translateY(-1px);}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.btn-success{background:var(--success);color:white;}
+.btn-success:hover{background:#27ae60;}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger);}
+.btn-danger:hover{background:rgba(231,76,60,.1);}
+.btn-sm{padding:7px 14px;font-size:12px;}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-group{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--surface2);padding:12px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);}
+td{padding:12px 16px;border-bottom:1px solid rgba(42,47,64,.5);color:var(--text);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(79,142,247,.03);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-pending{background:rgba(243,156,18,.15);color:var(--warning);}
+.badge-generating{background:rgba(79,142,247,.15);color:var(--accent);}
+.badge-ready{background:rgba(46,204,113,.15);color:var(--success);}
+.badge-sent{background:rgba(124,92,252,.15);color:var(--accent2);}
+.badge-skipped{background:rgba(74,80,104,.2);color:var(--text3);}
+.seq-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.seq-1{background:rgba(79,142,247,.2);color:var(--accent);}
+.seq-2{background:rgba(124,92,252,.2);color:var(--accent2);}
+.seq-3{background:rgba(46,204,113,.2);color:var(--success);}
+.seq-4{background:rgba(243,156,18,.2);color:var(--warning);}
+.seq-5{background:rgba(231,76,60,.2);color:var(--danger);}
+.email-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.email-card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--surface);border-bottom:1px solid var(--border);cursor:pointer;}
+.email-card-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.email-card-company{font-weight:600;font-size:14px;}
+.email-card-body{padding:18px;display:none;}
+.email-card-body.open{display:block;}
+.api-section{background:rgba(79,142,247,.05);border:1px solid rgba(79,142,247,.2);border-radius:12px;padding:20px;margin-bottom:24px;}
+.api-section p{font-size:13px;color:var(--text2);margin-top:8px;}
+.progress-wrap{background:var(--surface2);border-radius:10px;height:8px;overflow:hidden;margin:12px 0;}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:10px;transition:width .4s ease;}
+.progress-text{font-size:12px;color:var(--text2);text-align:right;}
+.toast{position:fixed;bottom:30px;right:30px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-size:14px;z-index:1000;transform:translateY(80px);opacity:0;transition:all .3s;max-width:340px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{border-color:var(--success);}
+.toast.error{border-color:var(--danger);}
+.col-map{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-bottom:12px;}
+.col-map-arrow{color:var(--text3);text-align:center;}
+.hint{font-size:12px;color:var(--text3);margin-top:6px;}
+.divider{height:1px;background:var(--border);margin:24px 0;}
+.gmail-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#ea4335;color:white;border-radius:8px;font-size:13px;font-weight:600;transition:all .2s;border:none;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.gmail-btn:hover{background:#d33426;transform:translateY(-1px);}
+.sending-mode-toggle{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;gap:4px;}
+.mode-btn{padding:8px 20px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;color:var(--text2);background:transparent;border:none;font-family:'Noto Sans JP',sans-serif;}
+.mode-btn.active{background:var(--accent);color:white;}
+.tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:24px;gap:0;}
+.tab{padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;font-family:'Noto Sans JP',sans-serif;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.cal-slot{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;margin:4px;cursor:pointer;transition:all .2s;}
+.cal-slot:hover,.cal-slot.selected{background:rgba(79,142,247,.15);border-color:var(--accent);color:var(--accent);}
+.cal-slot.selected::before{content:'✓ ';}
+.warning-box{background:rgba(243,156,18,.08);border:1px solid rgba(243,156,18,.3);border-radius:10px;padding:16px;margin-bottom:20px;font-size:13px;color:var(--warning);}
+.info-box{background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:16px;margin-bottom:20px;font-size:13px;color:var(--text2);}
+.angle-tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(124,92,252,.15);color:var(--accent2);margin-left:4px;}
+.gcal-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:#4285f4;color:white;border-radius:8px;font-size:13px;font-weight:600;transition:all .2s;border:none;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.gcal-btn:hover{background:#3367d6;}
+select option{background:var(--surface);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">Ombo <span>Mail</span></div>
+    <div class="status-bar">
+      <div class="stat-pill">リード: <strong id="totalCount">0</strong></div>
+      <div class="stat-pill">生成済: <strong id="readyCount">0</strong></div>
+      <div class="stat-pill">送信済: <strong id="sentCount">0</strong></div>
+    </div>
+  </header>
+
+  <div class="steps">
+    <div class="step active" id="step1-indicator"><div class="step-num">1</div>CSV読み込み</div>
+    <div class="step-arrow">›</div>
+    <div class="step" id="step2-indicator"><div class="step-num">2</div>設定</div>
+    <div class="step-arrow">›</div>
+    <div class="step" id="step3-indicator"><div class="step-num">3</div>AI生成</div>
+    <div class="step-arrow">›</div>
+    <div class="step" id="step4-indicator"><div class="step-num">4</div>確認・送信</div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="panel visible" id="panel1">
+    <div class="panel-header"><div class="panel-title">📂 CSVファイルを読み込む</div></div>
+    <div class="api-section">
+      <label>Gemini API キー</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="apiKey" placeholder="AIza..." style="font-family:monospace;font-size:13px;margin-bottom:0;">
+        <button class="btn btn-secondary btn-sm" onclick="saveApiKey()">💾 保存</button>
+        <button class="btn btn-danger btn-sm" onclick="clearApiKey()">🗑 削除</button>
+      </div>
+      <p style="margin-top:8px;">取得先: <a href="https://aistudio.google.com" target="_blank" style="color:var(--accent);">aistudio.google.com</a>（無料）／ キーはブラウザ内にのみ保存されます</p>
+    </div>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvInput').click()">
+      <div class="upload-icon">📊</div>
+      <div class="upload-text">CSVファイルをドロップ、またはクリックして選択</div>
+      <div class="upload-subtext">列: 企業名・担当者名・メールアドレス・Webサイト（任意）</div>
+    </div>
+    <input type="file" id="csvInput" accept=".csv" style="display:none;">
+    <div id="mappingSection" style="display:none;margin-top:24px;">
+      <div class="divider"></div>
+      <div class="panel-title" style="margin-bottom:20px;">📋 列マッピング</div>
+      <div class="col-map">
+        <div><label>企業名</label><select id="map-company"></select></div>
+        <div class="col-map-arrow">→</div>
+        <div style="padding:12px 16px;background:var(--surface2);border-radius:10px;font-size:13px;color:var(--text2);">企業名</div>
+      </div>
+      <div class="col-map">
+        <div><label>担当者名</label><select id="map-person"></select></div>
+        <div class="col-map-arrow">→</div>
+        <div style="padding:12px 16px;background:var(--surface2);border-radius:10px;font-size:13px;color:var(--text2);">担当者名</div>
+      </div>
+      <div class="col-map">
+        <div><label>メールアドレス</label><select id="map-email"></select></div>
+        <div class="col-map-arrow">→</div>
+        <div style="padding:12px 16px;background:var(--surface2);border-radius:10px;font-size:13px;color:var(--text2);">メールアドレス</div>
+      </div>
+      <div class="col-map">
+        <div><label>Webサイト（任意）</label><select id="map-website"></select></div>
+        <div class="col-map-arrow">→</div>
+        <div style="padding:12px 16px;background:var(--surface2);border-radius:10px;font-size:13px;color:var(--text2);">Webサイト URL</div>
+      </div>
+      <div class="btn-group" style="margin-top:20px;">
+        <button class="btn btn-primary" onclick="applyMapping()">✓ マッピングを適用して次へ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="panel" id="panel2">
+    <div class="panel-header">
+      <div class="panel-title">⚙️ 設定</div>
+      <button class="btn btn-secondary btn-sm" onclick="saveAllSettings()">💾 すべて保存</button>
+    </div>
+    <div class="tab-bar">
+      <button class="tab active" id="tab-btn-template" onclick="switchTab('tab-template',this)">📝 テンプレート</button>
+      <button class="tab" id="tab-btn-schedule" onclick="switchTab('tab-schedule',this)">📅 日程・URL</button>
+      <button class="tab" id="tab-btn-sequence" onclick="switchTab('tab-sequence',this)">🔄 シーケンス</button>
+    </div>
+
+    <div id="tab-template">
+      <div class="form-grid">
+        <div class="form-field">
+          <label>送信者名</label>
+          <input type="text" id="senderName" placeholder="山田 太郎（Ombo）">
+        </div>
+        <div class="form-field">
+          <label>件名（AIが通数に応じて自動生成）</label>
+          <input type="text" id="subjectTemplate" value="【{{会社名}}様へ】{{件名AI}}">
+        </div>
+      </div>
+      <div class="form-field">
+        <label>メール固定フッター</label>
+        <textarea id="footerTemplate" style="min-height:130px;">何卒よろしくお願いいたします。
+
+山田 太郎
+━━━━━━━━━━━━━━━━━━━━
+Ombo（オンボー）
+mail: yamada@ombo.jp / tel: 03-XXXX-XXXX
+https://ombo.jp
+━━━━━━━━━━━━━━━━━━━━</textarea>
+      </div>
+      <div class="form-field">
+        <label>AIへの共通指示</label>
+        <textarea id="aiInstruction" style="min-height:80px;">押し売り感なく、相手の課題に共感するところから入ること。文体は丁寧だがフレンドリーに。200〜300文字程度。</textarea>
+      </div>
+    </div>
+
+    <div id="tab-schedule" style="display:none;">
+      <div class="form-field">
+        <label>日程調整URL（Timelex / Calendly など）</label>
+        <input type="text" id="schedulingUrl" placeholder="https://timelex.me/yourname">
+        <p class="hint">設定するとメール末尾にURLが自動挿入されます。空欄の場合は候補日程を直接記載。</p>
+      </div>
+      <div class="divider"></div>
+      <div class="panel-title" style="margin-bottom:16px;font-size:15px;">📅 Googleカレンダー連携</div>
+      <div class="info-box">Googleカレンダーと連携すると、空き時間を自動取得してメールに候補日として挿入できます。</div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label>打ち合わせ可能 開始時刻</label>
+          <input type="text" id="availStart" value="10:00" placeholder="10:00">
+        </div>
+        <div class="form-field">
+          <label>打ち合わせ可能 終了時刻</label>
+          <input type="text" id="availEnd" value="18:00" placeholder="18:00">
+        </div>
+      </div>
+      <div class="form-field">
+        <label>打ち合わせ時間（分）</label>
+        <input type="number" id="meetDuration" value="30" style="width:120px;">
+      </div>
+      <div class="btn-group">
+        <button class="gcal-btn" onclick="connectGoogleCalendar()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+          Googleカレンダーと連携する
+        </button>
+        <div id="calStatus" style="font-size:13px;color:var(--text2);"></div>
+      </div>
+      <div id="calSlotSection" style="display:none;margin-top:20px;">
+        <label>取得した空き時間（クリックで選択）</label>
+        <div id="calSlots" style="margin-top:8px;"></div>
+        <p class="hint">選択した候補日がメールに自動挿入されます</p>
+      </div>
+    </div>
+
+    <div id="tab-sequence" style="display:none;">
+      <div class="info-box">各リードに「何通目を送ったか」が記録されます。次回は自動的に次の通数のアングルでメールを生成します。</div>
+      <div class="form-field">
+        <label>アングルのローテーション設定</label>
+        <div id="angleList" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+          <div class="angle-row" style="display:flex;gap:8px;align-items:center;">
+            <span class="seq-badge seq-1">1通目</span>
+            <input type="text" value="早期離職の課題提起（3ヶ月以内の離職率データを活用）" style="flex:1;margin-bottom:0;">
+          </div>
+          <div class="angle-row" style="display:flex;gap:8px;align-items:center;">
+            <span class="seq-badge seq-2">2通目</span>
+            <input type="text" value="早期活躍の重要性（入社後100日間の生産性向上）" style="flex:1;margin-bottom:0;">
+          </div>
+          <div class="angle-row" style="display:flex;gap:8px;align-items:center;">
+            <span class="seq-badge seq-3">3通目</span>
+            <input type="text" value="オンボーディングの学術的エビデンス（研究データ引用）" style="flex:1;margin-bottom:0;">
+          </div>
+          <div class="angle-row" style="display:flex;gap:8px;align-items:center;">
+            <span class="seq-badge seq-4">4通目</span>
+            <input type="text" value="導入事例・業種別の成功事例を紹介" style="flex:1;margin-bottom:0;">
+          </div>
+          <div class="angle-row" style="display:flex;gap:8px;align-items:center;">
+            <span class="seq-badge seq-5">5通目</span>
+            <input type="text" value="オウンドメディアの記事を送り価値提供（最後のフォローアップ）" style="flex:1;margin-bottom:0;">
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:12px;" onclick="addAngle()">＋ アングルを追加</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="btn-group">
+      <button class="btn btn-secondary" onclick="goToStep(1)">← 戻る</button>
+      <button class="btn btn-primary" onclick="saveAllSettings();goToStep(3);">✓ 保存して次へ →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="panel" id="panel3">
+    <div class="panel-header">
+      <div class="panel-title">🤖 AI文面を生成する</div>
+      <button class="btn btn-secondary btn-sm" onclick="goToStep(2)">← 設定編集</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
+            <th>企業名</th>
+            <th>担当者名</th>
+            <th>メールアドレス</th>
+            <th>次の通数</th>
+            <th>アングル</th>
+            <th>ステータス</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="leadTableBody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:20px;">
+      <div class="progress-wrap" id="progressWrap" style="display:none;">
+        <div class="progress-bar" id="progressBar" style="width:0%"></div>
+      </div>
+      <div class="progress-text" id="progressText"></div>
+    </div>
+    <div class="btn-group" style="margin-top:20px;">
+      <button class="btn btn-primary" onclick="generateSelected()">🤖 選択したリードのAI文面を生成</button>
+      <button class="btn btn-secondary" onclick="generateAll()">全件生成</button>
+      <button class="btn btn-primary" onclick="goToStep(4)" style="margin-left:auto;background:var(--accent2);">確認・送信へ →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="panel" id="panel4">
+    <div class="panel-header">
+      <div class="panel-title">📤 確認・送信</div>
+      <div class="sending-mode-toggle">
+        <button class="mode-btn active" id="modeOne" onclick="setMode('one')">1件ずつ確認</button>
+        <button class="mode-btn" id="modeBulk" onclick="setMode('bulk')">一括送信</button>
+      </div>
+    </div>
+    <div id="modeOneView"><div id="oneByOneContainer"></div></div>
+    <div id="modeBulkView" style="display:none;">
+      <div class="warning-box">⚠️ 一括モードでは準備完了のメールをすべてGmailで開きます。内容を事前によく確認してください。</div>
+      <div id="bulkList"></div>
+      <div class="btn-group" style="margin-top:20px;">
+        <button class="btn btn-success" onclick="sendAllReady()">✓ 準備完了分をすべてGmailで開く</button>
+      </div>
+    </div>
+    <div class="btn-group" style="margin-top:24px;">
+      <button class="btn btn-secondary" onclick="goToStep(3)">← 生成画面に戻る</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let leads=[];let csvHeaders=[];let currentStep=1;let sendMode='one';
+let selectedCalSlots=[];let gcalAccessToken=null;
+
+window.addEventListener('load',()=>{loadApiKey();loadAllSettings();});
+
+// CSV
+document.getElementById('csvInput').addEventListener('change',e=>{if(e.target.files[0])parseCSV(e.target.files[0]);});
+const uploadZone=document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('drag-over');});
+uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop',e=>{
+  e.preventDefault();uploadZone.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.name.endsWith('.csv'))parseCSV(f);
+  else showToast('CSVファイルを選択してください','error');
+});
+
+function parseCSV(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+    const lines=text.split('\n').filter(l=>l.trim());
+    if(lines.length<2){showToast('データが不足しています','error');return;}
+    let delimiter=',';
+    for(const d of[',','\t',';']){if(lines[0].split(d).length>1){delimiter=d;break;}}
+    csvHeaders=lines[0].split(delimiter).map(h=>h.trim().replace(/^"|"$/g,''));
+    const rawLeads=[];
+    for(let i=1;i<lines.length;i++){
+      const vals=splitCSVLine(lines[i],delimiter);
+      if(vals.length<2)continue;
+      const obj={};
+      csvHeaders.forEach((h,idx)=>{obj[h]=(vals[idx]||'').trim().replace(/^"|"$/g,'');});
+      rawLeads.push(obj);
+    }
+    if(rawLeads.length===0){showToast('データが見つかりませんでした','error');return;}
+    document.getElementById('mappingSection').style.display='block';
+    uploadZone.innerHTML=`<div class="upload-icon">✅</div><div class="upload-text">${esc(file.name)}（${rawLeads.length}件）を読み込みました</div>`;
+    populateMapSelect('map-company',csvHeaders,['企業名','会社名','company','name']);
+    populateMapSelect('map-person',csvHeaders,['担当者名','担当者','氏名','person','contact']);
+    populateMapSelect('map-email',csvHeaders,['メールアドレス','メール','email','mail']);
+    populateMapSelect('map-website',csvHeaders,['Webサイト','website','url','web','hp'],true);
+    window._rawLeads=rawLeads;
+    showToast(`${rawLeads.length}件のリードを検出しました`,'success');
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function splitCSVLine(line,delimiter){
+  const result=[];let current='';let inQuotes=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){inQuotes=!inQuotes;}
+    else if(c===delimiter&&!inQuotes){result.push(current);current='';}
+    else{current+=c;}
+  }
+  result.push(current);return result;
+}
+
+function populateMapSelect(id,headers,hints,allowNone=false){
+  const sel=document.getElementById(id);sel.innerHTML='';
+  if(allowNone){const o=document.createElement('option');o.value='__none__';o.textContent='（なし）';sel.appendChild(o);}
+  headers.forEach(h=>{const o=document.createElement('option');o.value=h;o.textContent=h;sel.appendChild(o);});
+  for(const hint of hints){const m=headers.find(h=>h.toLowerCase().includes(hint.toLowerCase()));if(m){sel.value=m;break;}}
+}
+
+function applyMapping(){
+  const companyCol=document.getElementById('map-company').value;
+  const personCol=document.getElementById('map-person').value;
+  const emailCol=document.getElementById('map-email').value;
+  const websiteCol=document.getElementById('map-website').value;
+  const history=loadLeadHistory();
+  const newLeads=window._rawLeads.map((row,idx)=>{
+    const email=(row[emailCol]||'').trim();
+    const company=(row[companyCol]||'').trim();
+    const existing=history[email]||{};
+    return{id:idx,company,person:(row[personCol]||'').trim(),email,
+      website:websiteCol==='__none__'?'':(row[websiteCol]||'').trim(),
+      status:'pending',generatedBody:'',subject:'',
+      seqCount:existing.seqCount||0,selected:true};
+  }).filter(l=>l.email&&l.company);
+  if(newLeads.length===0){showToast('有効なリードが見つかりません','error');return;}
+  leads=newLeads;updateStats();goToStep(2);
+}
+
+function loadLeadHistory(){
+  try{return JSON.parse(localStorage.getItem('ombo_lead_history')||'{}');}catch{return{};}
+}
+function saveLeadHistory(){
+  const h={};
+  leads.forEach(l=>{if(l.email)h[l.email]={seqCount:l.seqCount};});
+  localStorage.setItem('ombo_lead_history',JSON.stringify(h));
+}
+
+function goToStep(step){
+  if(step>=2&&leads.length===0){showToast('先にCSVを読み込んでください','error');return;}
+  currentStep=step;
+  for(let i=1;i<=4;i++){
+    document.getElementById(`panel${i}`).classList.toggle('visible',i===step);
+    const ind=document.getElementById(`step${i}-indicator`);
+    ind.classList.remove('active','done');
+    if(i===step)ind.classList.add('active');
+    else if(i<step)ind.classList.add('done');
+  }
+  if(step===3)renderLeadTable();
+  if(step===4)renderSendView();
+}
+
+function switchTab(tabId,btn){
+  ['tab-template','tab-schedule','tab-sequence'].forEach(id=>{
+    document.getElementById(id).style.display=id===tabId?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function getAngles(){
+  return Array.from(document.querySelectorAll('.angle-row input')).map(i=>i.value.trim()).filter(Boolean);
+}
+function addAngle(){
+  const list=document.getElementById('angleList');
+  const n=list.children.length+1;
+  const cls=`seq-${Math.min(n,5)}`;
+  const div=document.createElement('div');
+  div.className='angle-row';
+  div.style.cssText='display:flex;gap:8px;align-items:center;';
+  div.innerHTML=`<span class="seq-badge ${cls}">${n}通目</span><input type="text" value="新しいアングル" style="flex:1;margin-bottom:0;">`;
+  list.appendChild(div);
+}
+
+function renderLeadTable(){
+  const angles=getAngles();
+  const tbody=document.getElementById('leadTableBody');
+  tbody.innerHTML='';
+  leads.forEach(lead=>{
+    const nextSeq=lead.seqCount+1;
+    const angleIdx=lead.seqCount%angles.length;
+    const angleName=angles[angleIdx]||'—';
+    const seqCls=`seq-${Math.min(nextSeq,5)}`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><input type="checkbox" ${lead.selected?'checked':''} onchange="leads[${lead.id}].selected=this.checked"></td>
+      <td><strong>${esc(lead.company)}</strong></td>
+      <td>${esc(lead.person)}</td>
+      <td style="font-family:monospace;font-size:12px;">${esc(lead.email)}</td>
+      <td><span class="seq-badge ${seqCls}">${nextSeq}通目</span></td>
+      <td style="font-size:12px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(angleName)}">${esc(angleName)}</td>
+      <td><span class="badge badge-${lead.status}" id="badge-${lead.id}">${statusLabel(lead.status)}</span></td>
+      <td><button class="btn btn-secondary btn-sm" onclick="generateOne(${lead.id})" id="genbtn-${lead.id}">生成</button></td>`;
+    tbody.appendChild(tr);
+  });
+  updateStats();
+}
+function statusLabel(s){return{pending:'未生成',generating:'生成中…',ready:'準備完了',sent:'送信済',skipped:'スキップ'}[s]||s;}
+function toggleSelectAll(cb){leads.forEach(l=>l.selected=cb.checked);renderLeadTable();}
+
+async function generateOne(id){
+  const lead=leads[id];
+  const apiKey=document.getElementById('apiKey').value.trim();
+  if(!apiKey){showToast('APIキーを入力してください','error');return;}
+  lead.status='generating';updateBadge(id);
+  const btn=document.getElementById(`genbtn-${id}`);
+  if(btn)btn.disabled=true;
+  try{
+    const result=await callGemini(apiKey,lead);
+    lead.generatedBody=result.body;lead.subject=result.subject;lead.status='ready';
+  }catch(err){
+    lead.status='pending';
+    showToast(`${lead.company}: 生成エラー (${err.message})`,'error');
+  }
+  updateBadge(id);if(btn)btn.disabled=false;updateStats();
+}
+
+async function generateSelected(){
+  const selected=leads.filter(l=>l.selected&&l.status!=='sent');
+  if(selected.length===0){showToast('リードを選択してください','error');return;}
+  const apiKey=document.getElementById('apiKey').value.trim();
+  if(!apiKey){showToast('APIキーを入力してください','error');return;}
+  document.getElementById('progressWrap').style.display='block';
+  let done=0;
+  for(const lead of selected){
+    if(lead.status==='sent')continue;
+    await generateOne(lead.id);done++;
+    document.getElementById('progressBar').style.width=Math.round(done/selected.length*100)+'%';
+    document.getElementById('progressText').textContent=`${done} / ${selected.length} 件完了（次まで5秒待機中…）`;
+    if(done<selected.length)await new Promise(r=>setTimeout(r,5000));
+  }
+  showToast(`${done}件の文面を生成しました`,'success');
+}
+async function generateAll(){leads.forEach(l=>l.selected=true);await generateSelected();}
+
+async function callGemini(apiKey,lead){
+  const angles=getAngles();
+  const angleIdx=lead.seqCount%angles.length;
+  const angle=angles[angleIdx]||'オンボーディングの重要性';
+  const nextSeq=lead.seqCount+1;
+  const aiInstruction=document.getElementById('aiInstruction').value.trim();
+  const schedulingUrl=document.getElementById('schedulingUrl').value.trim();
+  const footer=document.getElementById('footerTemplate').value.trim();
+  const calSlotText=selectedCalSlots.length>0
+    ?'\n候補日程:\n'+selectedCalSlots.map(s=>`・${s}`).join('\n'):'';
+  const scheduleSection=schedulingUrl
+    ?`\nご都合のよいお時間に、こちらからご予約ください:\n${schedulingUrl}${calSlotText}`
+    :calSlotText
+      ?`\nご都合のよい日程をいくつかご提案いたします:${calSlotText}`
+      :'\nもしよろしければ、30分ほどオンラインでお打ち合わせさせていただけますでしょうか。';
+  const websiteInfo=lead.website?`企業Webサイト: ${lead.website}`:'（Webサイト情報なし）';
+
+  const prompt=`あなたはオンボーディングクラウドサービス「Ombo（オンボー）」の営業担当です。
+以下の企業宛てに、${nextSeq}通目のアウトバウンドメールを作成してください。
+
+【企業情報】
+企業名: ${lead.company}
+担当者名: ${lead.person||'ご担当者'}
+${websiteInfo}
+
+【今回のアングル（${nextSeq}通目）】
+${angle}
+
+【共通指示】
+${aiInstruction}
+
+【日程調整（必ずメール末尾に含めること）】
+${scheduleSection}
+
+【フッター（そのまま使用）】
+${footer}
+
+以下のJSON形式のみで出力してください（マークダウン不要）:
+{"subject":"件名","body":"メール本文全体（担当者名への呼びかけから始め、フッターまで含む）"}`;
+
+  const res=await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1000,temperature:0.8}})}
+  );
+  if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`HTTP ${res.status}`);}
+  const data=await res.json();
+  let text=data.candidates[0].content.parts[0].text.trim();
+  text=text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+  try{const p=JSON.parse(text);return{subject:p.subject||'',body:p.body||''};}
+  catch{return{subject:`【${lead.company}様へ】Omboのご提案`,body:text};}
+}
+
+function updateBadge(id){
+  const badge=document.getElementById(`badge-${id}`);
+  if(!badge)return;
+  badge.className=`badge badge-${leads[id].status}`;
+  badge.textContent=statusLabel(leads[id].status);
+}
+
+// Google Calendar
+function connectGoogleCalendar(){
+  let clientId=localStorage.getItem('ombo_gcal_client_id');
+  if(!clientId){
+    clientId=prompt('Google OAuth クライアントIDを入力してください:\n（Google Cloud Console → APIと認証情報から取得）');
+    if(!clientId)return;
+    localStorage.setItem('ombo_gcal_client_id',clientId);
+  }
+  const redirectUri=encodeURIComponent(window.location.href.split('?')[0]);
+  const scope=encodeURIComponent('https://www.googleapis.com/auth/calendar.readonly');
+  const url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}`;
+  window.open(url,'_blank','width=500,height=600');
+  document.getElementById('calStatus').textContent='認証画面を開きました。認証後にトークンを貼り付けてください。';
+  setTimeout(()=>{
+    const token=prompt('認証後に取得したアクセストークンを貼り付けてください:');
+    if(token){gcalAccessToken=token;fetchCalendarSlots();}
+  },2000);
+}
+
+async function fetchCalendarSlots(){
+  if(!gcalAccessToken)return;
+  document.getElementById('calStatus').textContent='空き時間を取得中…';
+  const start=document.getElementById('availStart').value||'10:00';
+  const end=document.getElementById('availEnd').value||'18:00';
+  const duration=parseInt(document.getElementById('meetDuration').value)||30;
+  const now=new Date();
+  const timeMin=new Date(now.getTime()+24*60*60*1000).toISOString();
+  const timeMax=new Date(now.getTime()+14*24*60*60*1000).toISOString();
+  try{
+    const res=await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+      {headers:{Authorization:`Bearer ${gcalAccessToken}`}}
+    );
+    const data=await res.json();
+    const busySlots=(data.items||[]).map(ev=>({
+      start:new Date(ev.start.dateTime||ev.start.date),
+      end:new Date(ev.end.dateTime||ev.end.date)
+    }));
+    const freeSlots=generateFreeSlots(busySlots,start,end,duration);
+    displayCalSlots(freeSlots);
+    document.getElementById('calStatus').textContent=`✓ ${freeSlots.length}件の空き時間を取得しました`;
+  }catch(err){
+    document.getElementById('calStatus').textContent=`エラー: ${err.message}`;
+  }
+}
+
+function generateFreeSlots(busySlots,startTime,endTime,durationMin){
+  const slots=[];const now=new Date();
+  for(let day=1;day<=14&&slots.length<12;day++){
+    const date=new Date(now);date.setDate(date.getDate()+day);
+    if(date.getDay()===0||date.getDay()===6)continue;
+    const[sh,sm]=startTime.split(':').map(Number);
+    const[eh,em]=endTime.split(':').map(Number);
+    let cur=new Date(date);cur.setHours(sh,sm,0,0);
+    const dayEnd=new Date(date);dayEnd.setHours(eh,em,0,0);
+    while(cur.getTime()+durationMin*60000<=dayEnd.getTime()&&slots.length<12){
+      const slotEnd=new Date(cur.getTime()+durationMin*60000);
+      const conflict=busySlots.some(b=>cur<b.end&&slotEnd>b.start);
+      if(!conflict)slots.push(formatSlotLabel(cur,slotEnd));
+      cur=new Date(cur.getTime()+30*60000);
+    }
+  }
+  return slots;
+}
+
+function formatSlotLabel(start,end){
+  const days=['日','月','火','水','木','金','土'];
+  const m=start.getMonth()+1,d=start.getDate(),dow=days[start.getDay()];
+  const sh=String(start.getHours()).padStart(2,'0'),sm=String(start.getMinutes()).padStart(2,'0');
+  const eh=String(end.getHours()).padStart(2,'0'),em=String(end.getMinutes()).padStart(2,'0');
+  return `${m}/${d}（${dow}）${sh}:${sm}〜${eh}:${em}`;
+}
+
+function displayCalSlots(slots){
+  document.getElementById('calSlotSection').style.display='block';
+  const container=document.getElementById('calSlots');container.innerHTML='';
+  slots.forEach(slot=>{
+    const btn=document.createElement('button');
+    btn.className='cal-slot';btn.textContent=slot;
+    btn.onclick=()=>{
+      btn.classList.toggle('selected');
+      if(btn.classList.contains('selected'))selectedCalSlots.push(slot);
+      else selectedCalSlots=selectedCalSlots.filter(s=>s!==slot);
+    };
+    container.appendChild(btn);
+  });
+}
+
+function renderSendView(){if(sendMode==='one')renderOneByOne();else renderBulk();}
+
+function setMode(mode){
+  sendMode=mode;
+  document.getElementById('modeOne').classList.toggle('active',mode==='one');
+  document.getElementById('modeBulk').classList.toggle('active',mode==='bulk');
+  document.getElementById('modeOneView').style.display=mode==='one'?'block':'none';
+  document.getElementById('modeBulkView').style.display=mode==='bulk'?'block':'none';
+  renderSendView();
+}
+
+function renderOneByOne(){
+  const container=document.getElementById('oneByOneContainer');
+  const ready=leads.filter(l=>l.status==='ready'||l.status==='sent');
+  if(ready.length===0){
+    container.innerHTML='<div style="text-align:center;padding:48px;color:var(--text3);">📭 準備完了のメールがありません。先にAI文面を生成してください。</div>';return;
+  }
+  container.innerHTML='';
+  ready.forEach(lead=>{
+    const angles=getAngles();
+    const displaySeq=lead.status==='sent'?lead.seqCount:lead.seqCount+1;
+    const angleIdx=(lead.status==='sent'?lead.seqCount-1:lead.seqCount)%angles.length;
+    const angleName=angles[Math.max(0,angleIdx)]||'';
+    const seqCls=`seq-${Math.min(displaySeq,5)}`;
+    const card=document.createElement('div');card.className='email-card';
+    card.innerHTML=`
+      <div class="email-card-header" onclick="toggleCard(${lead.id})">
+        <div class="email-card-meta">
+          <span class="badge badge-${lead.status}">${statusLabel(lead.status)}</span>
+          <span class="seq-badge ${seqCls}">${displaySeq}通目</span>
+          <span class="email-card-company">${esc(lead.company)}</span>
+          <span style="color:var(--text2);font-size:13px;">${esc(lead.person)}</span>
+          <span class="angle-tag">${esc(angleName)}</span>
+        </div>
+        <span style="color:var(--text3);" id="arrow-${lead.id}">▼</span>
+      </div>
+      <div class="email-card-body" id="body-${lead.id}">
+        <div style="margin-bottom:12px;">
+          <label>件名</label>
+          <input type="text" value="${esc(lead.subject)}" oninput="leads[${lead.id}].subject=this.value" style="margin-bottom:0;">
+        </div>
+        <div style="margin-bottom:16px;">
+          <label>本文</label>
+          <textarea style="min-height:280px;" oninput="leads[${lead.id}].generatedBody=this.value">${esc(lead.generatedBody)}</textarea>
+        </div>
+        <div class="btn-group">
+          ${lead.status!=='sent'
+            ?`<button class="gmail-btn" onclick="openGmail(${lead.id})">✉ Gmailで開く・送信済みにする</button>
+               <button class="btn btn-secondary btn-sm" onclick="generateOne(${lead.id}).then(()=>renderOneByOne())">🔄 再生成</button>`
+            :'<span style="color:var(--success);font-size:13px;">✓ 送信済み</span>'}
+          <button class="btn btn-danger btn-sm" onclick="skipLead(${lead.id})">スキップ</button>
+        </div>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function renderBulk(){
+  const container=document.getElementById('bulkList');
+  const ready=leads.filter(l=>l.status==='ready');
+  if(ready.length===0){container.innerHTML='<div style="text-align:center;padding:48px;color:var(--text3);">📭 準備完了のメールがありません。</div>';return;}
+  container.innerHTML='';
+  ready.forEach(lead=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);';
+    row.innerHTML=`
+      <input type="checkbox" checked id="bulk-${lead.id}">
+      <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;">${esc(lead.company)}</div><div style="font-size:12px;color:var(--text2);">${esc(lead.email)}</div></div>
+      <div style="font-size:12px;color:var(--text2);flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(lead.subject)}</div>
+      <button class="gmail-btn" style="font-size:12px;padding:6px 12px;" onclick="openGmail(${lead.id})">Gmail</button>`;
+    container.appendChild(row);
+  });
+}
+
+function toggleCard(id){
+  const body=document.getElementById(`body-${id}`);
+  const arrow=document.getElementById(`arrow-${id}`);
+  arrow.textContent=body.classList.toggle('open')?'▲':'▼';
+}
+
+function openGmail(id){
+  const lead=leads[id];if(!lead)return;
+  window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(lead.email)}&su=${encodeURIComponent(lead.subject)}&body=${encodeURIComponent(lead.generatedBody)}`,'_blank');
+  lead.status='sent';lead.seqCount=(lead.seqCount||0)+1;
+  saveLeadHistory();updateStats();renderSendView();
+  showToast(`${lead.company}（${lead.seqCount}通目）をGmailで開きました`,'success');
+}
+
+function sendAllReady(){
+  let count=0;
+  leads.filter(l=>l.status==='ready').forEach((lead,i)=>{
+    const cb=document.getElementById(`bulk-${lead.id}`);
+    if(cb?.checked){setTimeout(()=>openGmail(lead.id),i*600);count++;}
+  });
+  showToast(`${count}件のGmail画面を開きます`,'success');
+}
+
+function skipLead(id){leads[id].status='skipped';updateStats();renderSendView();}
+
+// Storage
+function saveApiKey(){
+  const key=document.getElementById('apiKey').value.trim();
+  if(!key){showToast('APIキーを入力してください','error');return;}
+  localStorage.setItem('gemini_api_key',key);showToast('APIキーを保存しました ✓','success');
+}
+function clearApiKey(){
+  localStorage.removeItem('gemini_api_key');document.getElementById('apiKey').value='';
+  showToast('APIキーを削除しました','success');
+}
+function loadApiKey(){
+  const saved=localStorage.getItem('gemini_api_key');
+  if(saved){document.getElementById('apiKey').value=saved;showToast('保存済みのAPIキーを読み込みました ✓','success');}
+}
+function saveAllSettings(){
+  const s=(id,key)=>localStorage.setItem(key,document.getElementById(id).value);
+  s('senderName','ombo_sender');s('subjectTemplate','ombo_subject');
+  s('footerTemplate','ombo_footer');s('aiInstruction','ombo_ai');
+  s('schedulingUrl','ombo_sched_url');s('availStart','ombo_avail_start');
+  s('availEnd','ombo_avail_end');s('meetDuration','ombo_meet_dur');
+  const angles=Array.from(document.querySelectorAll('.angle-row input')).map(i=>i.value);
+  localStorage.setItem('ombo_angles',JSON.stringify(angles));
+  showToast('すべての設定を保存しました ✓','success');
+}
+function loadAllSettings(){
+  const s=(id,key)=>{const v=localStorage.getItem(key);if(v)document.getElementById(id).value=v;};
+  s('senderName','ombo_sender');s('subjectTemplate','ombo_subject');
+  s('footerTemplate','ombo_footer');s('aiInstruction','ombo_ai');
+  s('schedulingUrl','ombo_sched_url');s('availStart','ombo_avail_start');
+  s('availEnd','ombo_avail_end');s('meetDuration','ombo_meet_dur');
+  const angles=JSON.parse(localStorage.getItem('ombo_angles')||'null');
+  if(angles){
+    const rows=document.querySelectorAll('.angle-row input');
+    angles.forEach((a,i)=>{if(rows[i])rows[i].value=a;});
+  }
+}
+
+function updateStats(){
+  document.getElementById('totalCount').textContent=leads.length;
+  document.getElementById('readyCount').textContent=leads.filter(l=>l.status==='ready').length;
+  document.getElementById('sentCount').textContent=leads.filter(l=>l.status==='sent').length;
+}
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast show ${type}`;
+  setTimeout(()=>t.className='toast',3000);
+}
+function esc(str){
+  if(!str)return'';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
